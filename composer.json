@@ -1,0 +1,25 @@
+{
+    "name": "viviniko/media",
+    "description": "VIVINIKO Media Service Provider",
+	"keywords": ["viviniko", "media", "laravel"],
+	"homepage": "http://viviniko.com",
+	"license": "MIT",
+	"authors": [
+        {
+            "name": "viviniko",
+            "email": "viviniko.shop@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.0",
+        "intervention/image": "^2.4",
+        "viviniko/support": "dev-master"
+    },
+	"autoload": {
+        "psr-0": {
+            "Viviniko\\Media": "src"
+        }
+    },
+    "minimum-stability": "dev",
+	"prefer-stable": true
+}
