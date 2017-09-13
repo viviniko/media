@@ -9,7 +9,7 @@ class Media extends Model
 {
     protected $tableConfigKey = 'media.medias_table';
 
-    protected $fillable = ['filename', 'size', 'disk', 'mime_type'];
+    protected $fillable = ['filename', 'size', 'disk', 'mime_type', 'sha1'];
 
     protected $appends = ['url'];
 

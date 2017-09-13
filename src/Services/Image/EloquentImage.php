@@ -40,27 +40,39 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
 
         $data = $image->encode($file->getMimeType(), $quality);
 
-        $hash = md5($data);
-
-        $dir = $dir ? rtrim($dir, '/') : '';
-
-        $dir .= "/$hash[0]$hash[1]/$hash[2]$hash[3]";
-
-        $filename = ltrim($dir . '/' . $file->getClientOriginalName(), '/') ;
+        $hash = sha1($data);
 
         //Create file if file is not exists, or return file instance
-        $existFile = $this->findBy('filename', $filename)->first();
-        if (!$existFile) {
-            Storage::disk($this->disk)->put($filename, $data);
+        $existFile = $this->findBy('sha1', $hash)->first();
 
+        if (!$existFile) {
+            $dir = $dir ? rtrim($dir, '/') : '';
+            $dir .= "/$hash[0]$hash[1]/$hash[2]$hash[3]";
+            $filename = ltrim($dir . '/' . $file->getClientOriginalName(), '/') ;
+            $basename = $filename;
+            $ext = '';
+            if (($dotPos = strrpos($filename, '.')) !== false) {
+                $basename = substr($filename, 0, $dotPos);
+                $ext= substr($filename, $dotPos);
+            }
+            $i = 1;
+            while (Storage::disk($this->disk)->exists($filename)) {
+                $filename = "{$basename}-{$i}{$ext}";
+                if (++$i > 10000) {
+                    throw new \Exception('Error file name');
+                }
+            }
+            Storage::disk($this->disk)->put($filename, $data);
             return $this->create([
                 'filename' => $filename,
                 'size' => $file->getSize(),
                 'disk' => $this->disk,
                 'mime_type' => $file->getMimeType(),
+                'sha1' => $hash,
             ]);
         }
-        return $existFile ?: $this->findBy('filename', $filename)->first();
+
+        return $existFile;
     }
 
     /**
