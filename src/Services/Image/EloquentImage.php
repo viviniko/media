@@ -43,34 +43,36 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
         $hash = sha1($data);
 
         //Create file if file is not exists, or return file instance
-        if (!($media = $this->findBy('sha1', $hash)->first())) {
-            $dir = $dir ? rtrim($dir, '/') : '';
-            $dir .= "/$hash[0]$hash[1]/$hash[2]$hash[3]";
-            $filename = ltrim($dir . '/' . $file->getClientOriginalName(), '/') ;
-            $basename = $filename;
-            $ext = '';
-            if (($dotPos = strrpos($filename, '.')) !== false) {
-                $basename = substr($filename, 0, $dotPos);
-                $ext= substr($filename, $dotPos);
-            }
-            $i = 1;
-            while (Storage::disk($this->disk)->exists($filename)) {
-                $filename = "{$basename}-{$i}{$ext}";
-                if (++$i > 10000) {
-                    throw new \Exception('Error file name');
-                }
-            }
-            Storage::disk($this->disk)->put($filename, $data);
-            $media = $this->create([
-                'filename' => $filename,
-                'size' => $file->getSize(),
-                'disk' => $this->disk,
-                'mime_type' => $file->getMimeType(),
-                'sha1' => $hash,
-            ]);
+        if ($existFile = $this->findBy('sha1', $hash)->first()) {
+            return $existFile;
         }
 
-        return $media;
+        $dir = $dir ? rtrim($dir, '/') : '';
+        $dir .= "/$hash[0]$hash[1]/$hash[2]$hash[3]";
+        $filename = ltrim($dir . '/' . $file->getClientOriginalName(), '/') ;
+        $basename = $filename;
+        $ext = '';
+        if (($dotPos = strrpos($filename, '.')) !== false) {
+            $basename = str_slug(substr($filename, 0, $dotPos), '_');
+            $ext = strtolower(substr($filename, $dotPos));
+        }
+        $filename = $basename . $ext;
+        $i = 1;
+        while (Storage::disk($this->disk)->exists($filename)) {
+            $filename = "{$basename}-{$i}{$ext}";
+            if (++$i > 10000) {
+                throw new \Exception('Error file name');
+            }
+        }
+        Storage::disk($this->disk)->put($filename, $data);
+
+        return $this->create([
+            'filename' => $filename,
+            'size' => $file->getSize(),
+            'disk' => $this->disk,
+            'mime_type' => $file->getMimeType(),
+            'sha1' => $hash,
+        ]);
     }
 
     /**
