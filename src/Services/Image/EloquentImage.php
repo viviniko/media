@@ -68,9 +68,9 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
 
         return $this->create([
             'filename' => $filename,
-            'size' => $file->getSize(),
+            'size' => Storage::disk($this->disk)->size($filename),
             'disk' => $this->disk,
-            'mime_type' => $file->getMimeType(),
+            'mime_type' => Storage::disk($this->disk)->mimeType($filename),
             'sha1' => $hash,
         ]);
     }
