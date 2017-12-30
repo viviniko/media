@@ -30,7 +30,7 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
     /**
      * {@inheritdoc}
      */
-    public function save(UploadedFile $file, $dir = 'default', $width = null, $height = null, $quality = 100)
+    public function save($file, $dir = 'default', $width = null, $height = null, $quality = 100)
     {
         $image = Image::make($file);
 
@@ -38,7 +38,7 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
             $image->resize($width, $height);
         }
 
-        $data = $image->encode($file->getMimeType(), $quality);
+        $data = $image->encode($image->mime(), $quality);
 
         $hash = sha1($data);
 
@@ -49,7 +49,7 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
 
         $dir = $dir ? rtrim($dir, '/') : '';
         $dir .= "/$hash[0]$hash[1]/$hash[2]$hash[3]";
-        $filename = ltrim($dir . '/' . $file->getClientOriginalName(), '/') ;
+        $filename = ltrim($dir . '/' . ($file instanceof UploadedFile ? $file->getClientOriginalName() : basename($file)), '/');
         $basename = $filename;
         $ext = '';
         if (($dotPos = strrpos($filename, '.')) !== false) {

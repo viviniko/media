@@ -2,21 +2,19 @@
 
 namespace Viviniko\Media\Contracts;
 
-use Illuminate\Http\UploadedFile;
-
 interface ImageService
 {
     public function search($keywords);
     /**
      * Save a new entity in repository
      *
-     * @param UploadedFile $file
+     * @param mixed $file
      * @param int $width
      * @param int $height
      *
      * @return mixed
      */
-    public function save(UploadedFile $file, $width = null, $height = null);
+    public function save($file, $width = null, $height = null);
 
     /**
      * Delete a entity in repository by id
