@@ -46,7 +46,7 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
     /**
      * {@inheritdoc}
      */
-    public function save($file, $dir = 'default', $width = null, $height = null, $quality = 100)
+    public function save($file, $dir = 'default', $width = null, $height = null, $quality = 75)
     {
         $image = Image::make($file);
 
