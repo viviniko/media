@@ -34,8 +34,11 @@ class CreateMediaTable extends Migration
             $table->unsignedInteger('size');
             $table->string('mime_type');
             $table->string('disk');
-            $table->string('sha1', 40)->unique();
+            $table->string('group', 64);
+            $table->string('sha1', 40);
             $table->timestamps();
+
+            $table->unique(['group', 'sha1']);
         });
     }
 

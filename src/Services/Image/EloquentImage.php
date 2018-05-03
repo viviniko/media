@@ -46,7 +46,7 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
     /**
      * {@inheritdoc}
      */
-    public function save($file, $dir = 'default', $width = null, $height = null, $quality = 75)
+    public function save($file, $group = 'default', $width = null, $height = null, $quality = 75)
     {
         $image = Image::make($file);
 
@@ -59,14 +59,20 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
         $hash = sha1($data);
 
         //Create file if file is not exists, or return file instance
-        $existFile = $this->findBy('sha1', $hash)->first();
+        $existFile = $this->findBy(['sha1' => $hash, 'group' => $group])->first();
 
         if (!$existFile) {
-            $dir = $dir ? rtrim($dir, '/') : '';
-
-            $dir .= "/$hash[0]$hash[1]/$hash[2]$hash[3]";
-
-            $filename = $this->makeFilename(ltrim($dir . '/' . ($file instanceof UploadedFile ? $file->getClientOriginalName() : basename($file)), '/'));
+            $groupPaths =  explode('.', $group);
+            $clientFilename = $file instanceof UploadedFile ? $file->getClientOriginalName() : basename($file);
+            if (strpos('@', $clientFilename) !== false) {
+                $filenamePaths = explode('@', $clientFilename);
+                $clientFilename = array_pop($filenamePaths);
+            } else {
+                $len = strlen($hash);
+                $filenamePaths = [$hash[$len-4] . $hash[$len-3], $hash[$len-2] . $hash[$len-1]];
+            }
+            $dir = implode('/', $groupPaths + $filenamePaths);
+            $filename = $this->makeFilename(ltrim($dir . '/' . $clientFilename, '/'));
             Storage::disk($this->disk)->put($filename, $data);
             return $this->create([
                 'filename' => $filename,
@@ -74,6 +80,7 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
                 'disk' => $this->disk,
                 'mime_type' => Storage::disk($this->disk)->mimeType($filename),
                 'sha1' => $hash,
+                'group' => $group
             ]);
         }
 
@@ -90,7 +97,7 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
         $data = $crop->encode($image->mime_type, 100);
         $hash = sha1($data);
         //Create file if file is not exists, or return file instance
-        $existFile = $this->findBy('sha1', $hash)->first();
+        $existFile = $this->findBy(['sha1', $hash, 'group' => $image->group])->first();
         if (!$existFile) {
             $filename = $this->makeFilename($this->makeFilename($image->filename, '_s', $image->disk));
             Storage::disk($image->disk)->put($filename, $data);
@@ -100,6 +107,7 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
                 'disk' => $image->disk,
                 'mime_type' => Storage::disk($this->disk)->mimeType($filename),
                 'sha1' => $hash,
+                'group' => $image->group,
             ]);
         }
 
