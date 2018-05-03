@@ -62,17 +62,7 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
         $existFile = $this->findBy(['sha1' => $hash, 'group' => $group])->first();
 
         if (!$existFile) {
-            $groupPaths =  explode('.', $group);
-            $clientFilename = $file instanceof UploadedFile ? $file->getClientOriginalName() : basename($file);
-            if (strpos($clientFilename, '@') !== false) {
-                $filenamePaths = explode('@', $clientFilename);
-                $clientFilename = array_pop($filenamePaths);
-            } else {
-                $len = strlen($hash);
-                $filenamePaths = [$hash[$len-4] . $hash[$len-3], $hash[$len-2] . $hash[$len-1]];
-            }
-            $dir = implode('/', $groupPaths + $filenamePaths);
-            $filename = $this->makeFilename(ltrim($dir . '/' . $clientFilename, '/'));
+            $filename = $this->makeFilename($this->generateFilename($file, $group, $hash));
             Storage::disk($this->disk)->put($filename, $data);
             return $this->create([
                 'filename' => $filename,
@@ -124,6 +114,65 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
         }
 
         return parent::delete($id);
+    }
+
+    private function generateFilename($file, $group, $hash)
+    {
+        $clientFilename = $file instanceof UploadedFile ? $file->getClientOriginalName() : basename($file);
+        $groupsConfig = Config::get('media.groups');
+        $dirFormat = isset($groupsConfig[$group]['dir_format']) ? $groupsConfig[$group]['dir_format'] : null;
+        $nameFormat = isset($groupsConfig[$group]['name_format']) ? $groupsConfig[$group]['name_format'] : null;
+        $groupDir = implode('/', array_map(function ($sub) {
+            return str_slug($sub, '_');
+        }, explode('.', $group)));
+        $doFormat = function ($format, $group = null, $clientFilename = null, $hash = null) {
+            $basename = $clientFilename;
+            $ext = '';
+            if (($dotPos = strrpos($clientFilename, '.')) !== false) {
+                $basename = implode('/', array_map(function ($sub) {
+                    return str_slug($sub, '_');
+                }, explode('/', substr($clientFilename, 0, $dotPos))));
+                $ext = strtolower(substr($clientFilename, $dotPos));
+            }
+            $len = strlen($hash);
+            $hashDir = $hash[$len-4] . $hash[$len-3] . '/' . $hash[$len-2] . $hash[$len-1];
+            $hashDir3 = $hash[$len-6] . $hash[$len-5] . $hash[$len-4] . '/' . $hash[$len-3] . $hash[$len-2] . $hash[$len-1];
+            return str_replace([
+                '{group}',
+                '{origin_name}',
+                '{base_name}',
+                '{ext}',
+                '{hash}',
+                '{hash_dir}',
+                '{hash_dir_3}',
+                '{YYYY}',
+                '{YY}',
+                '{MM}',
+                '{DD}',
+            ], [
+                $group,
+                $clientFilename,
+                $basename,
+                $ext,
+                $hash,
+                $hashDir,
+                $hashDir3,
+                date('Y'),
+                date('y'),
+                date('m'),
+                date('d')
+            ], $format);
+        };
+        $dir = trim($dirFormat ? $doFormat($dirFormat, $groupDir, $clientFilename, $hash) : $groupDir, '/');
+        if ($nameFormat == '@' && strpos($clientFilename, '@') !== false) {
+            $filenamePaths = explode('@', $clientFilename);
+            $clientFilename = array_pop($filenamePaths);
+            $filename = implode('/', $filenamePaths) . '/' . $clientFilename;
+        } else {
+            $filename = $doFormat('{hash_dir}/{origin_name}', $groupDir, $clientFilename, $hash);
+        }
+
+        return $dir . '/' . $filename;
     }
 
     private function makeFilename($filename, $suffix = '', $disk = null)

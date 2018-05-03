@@ -30,4 +30,11 @@ return [
     |
     */
     'disk' => 'media',
+
+    'groups' => [
+        'default' => [
+            'dir_format' => 'default',
+            'name_format' => '@',
+        ]
+    ],
 ];
