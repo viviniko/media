@@ -64,7 +64,7 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
         if (!$existFile) {
             $groupPaths =  explode('.', $group);
             $clientFilename = $file instanceof UploadedFile ? $file->getClientOriginalName() : basename($file);
-            if (strpos('@', $clientFilename) !== false) {
+            if (strpos($clientFilename, '@') !== false) {
                 $filenamePaths = explode('@', $clientFilename);
                 $clientFilename = array_pop($filenamePaths);
             } else {
