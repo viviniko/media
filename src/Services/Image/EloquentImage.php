@@ -102,6 +102,10 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
                 'sha1' => $hash,
                 'group' => $image->group,
             ]);
+        } else {
+            if (!Storage::disk($this->disk)->exists($existFile->filename)) {
+                Storage::disk($this->disk)->put($existFile->filename, $data);
+            }
         }
 
         return $existFile;
