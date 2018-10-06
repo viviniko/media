@@ -57,7 +57,7 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
         $data = $image->encode($image->mime(), $quality);
         $hash = sha1($data);
         //Create file if file is not exists, or return file instance
-        $existFile = $this->findBy(['sha1' => $hash, 'group' => $group])->first();
+        $existFile = $this->findBy(['sha1' => $hash, 'group' => $group]);
 
         if (!$existFile) {
             $filename = $this->makeFilename($this->generateFilename($file, $group, $hash));
@@ -90,7 +90,7 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
         $data = $crop->encode($image->mime_type, 100);
         $hash = sha1($data);
         //Create file if file is not exists, or return file instance
-        $existFile = $this->findBy(['sha1' => $hash, 'group' => $image->group])->first();
+        $existFile = $this->findBy(['sha1' => $hash, 'group' => $image->group]);
         if (!$existFile) {
             $filename = $this->makeFilename($this->makeFilename($image->filename, '_s', $image->disk));
             Storage::disk($image->disk)->put($filename, $data);
