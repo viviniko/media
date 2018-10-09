@@ -1,12 +1,12 @@
 <?php
 
-namespace Viviniko\Media\Services\File;
+namespace Viviniko\Media\Services\Impl;
 
-use Viviniko\Media\Contracts\FileService;
+use Viviniko\Media\Services\FileService;
 use Illuminate\Http\File;
 use Illuminate\Http\UploadedFile;
 
-class FileObject implements FileService
+class FileServiceImpl implements FileService
 {
     /** @var $files \Illuminate\Contracts\Filesystem\Filesystem */
     protected $files;

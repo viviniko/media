@@ -1,30 +1,31 @@
 <?php
 
-namespace Viviniko\Media\Services\Image;
+namespace Viviniko\Media\Services\Impl;
 
-use Illuminate\Cache\TaggableStore;
-use Illuminate\Support\Facades\Cache;
-use Viviniko\Media\Contracts\ImageService as ImageServiceInterface;
-use Viviniko\Repository\SimpleRepository;
+use Viviniko\Media\Repositories\MediaRepository;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
+use Viviniko\Media\Services\ImageService;
 
-class EloquentImage extends SimpleRepository implements ImageServiceInterface
+class ImageServiceImpl implements ImageService
 {
-    protected $modelConfigKey = 'media.media';
+    /**
+     * @var \Viviniko\Media\Repositories\MediaRepository
+     */
+    protected $repository;
 
-    protected $fieldSearchable = ['filename' => 'like'];
     /**
      * @var string
      */
     protected $disk;
 
     /**
-     * EloquentImage constructor.
+     * ImageServiceImpl constructor.
+     * @param MediaRepository $repository
      */
-    public function __construct()
+    public function __construct(MediaRepository $repository)
     {
         $this->disk = Config::get('media.disk', 'public');
     }
@@ -34,13 +35,7 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
      */
     public function getUrl($id)
     {
-        if (Cache::getStore() instanceof TaggableStore) {
-            return Cache::tags('medias')->remember('media.url?:' . $id, Config::get('cache.ttl', 60), function () use ($id) {
-                return data_get(parent::find($id, ['disk', 'filename']), 'url');
-            });
-        }
-
-        return data_get(parent::find($id, ['disk', 'filename']), 'url');
+        return data_get($this->repository->find($id, ['disk', 'filename']), 'url');
     }
 
     /**
@@ -57,13 +52,13 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
         $data = $image->encode($image->mime(), $quality);
         $hash = sha1($data);
         //Create file if file is not exists, or return file instance
-        $existFile = $this->findBy(['sha1' => $hash, 'group' => $group]);
+        $existFile = $this->repository->findBy(['sha1' => $hash, 'group' => $group]);
 
         if (!$existFile) {
             $filename = $this->makeFilename($this->generateFilename($file, $group, $hash));
             Storage::disk($this->disk)->put($filename, $data);
 
-            return $this->create([
+            return $this->repository->create([
                 'filename' => $filename,
                 'size' => Storage::disk($this->disk)->size($filename),
                 'disk' => $this->disk,
@@ -85,16 +80,16 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
      */
     public function crop($id, $width, $height, $x = null, $y = null)
     {
-        $image = $this->find($id);
+        $image = $this->repository->find($id);
         $crop = Image::make(Storage::disk($image->disk)->path($image->filename))->crop($width, $height, $x, $y);
         $data = $crop->encode($image->mime_type, 100);
         $hash = sha1($data);
         //Create file if file is not exists, or return file instance
-        $existFile = $this->findBy(['sha1' => $hash, 'group' => $image->group]);
+        $existFile = $this->repository->findBy(['sha1' => $hash, 'group' => $image->group]);
         if (!$existFile) {
             $filename = $this->makeFilename($this->makeFilename($image->filename, '_s', $image->disk));
             Storage::disk($image->disk)->put($filename, $data);
-            return $this->create([
+            return $this->repository->create([
                 'filename' => $filename,
                 'size' => Storage::disk($this->disk)->size($filename),
                 'disk' => $image->disk,
@@ -116,11 +111,11 @@ class EloquentImage extends SimpleRepository implements ImageServiceInterface
      */
     public function delete($id)
     {
-        if ($picture = $this->find($id)) {
+        if ($picture = $this->repository->find($id)) {
             Storage::disk($this->disk)->delete($picture->filename);
         }
 
-        return parent::delete($id);
+        return $this->repository->delete($id);
     }
 
     private function generateFilename($file, $group, $hash)

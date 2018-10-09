@@ -1,11 +1,15 @@
 <?php
 
-namespace Viviniko\Media\Contracts;
+namespace Viviniko\Media\Services;
 
 interface ImageService
 {
-    public function search($keywords);
-
+    /**
+     * Get media public url.
+     *
+     * @param $id
+     * @return mixed
+     */
     public function getUrl($id);
 
     /**

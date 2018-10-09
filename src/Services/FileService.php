@@ -1,6 +1,6 @@
 <?php
 
-namespace Viviniko\Media\Contracts;
+namespace Viviniko\Media\Services;
 
 use Illuminate\Http\UploadedFile;
 
