@@ -2,14 +2,16 @@
 
 namespace Viviniko\Media\Services\Impl;
 
+use Illuminate\Http\Request;
 use Viviniko\Media\Repositories\MediaRepository;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
 use Viviniko\Media\Services\ImageService;
+use Viviniko\Support\AbstractRequestRepositoryService;
 
-class ImageServiceImpl implements ImageService
+class ImageServiceImpl extends AbstractRequestRepositoryService implements ImageService
 {
     /**
      * @var \Viviniko\Media\Repositories\MediaRepository
@@ -22,12 +24,20 @@ class ImageServiceImpl implements ImageService
     protected $disk;
 
     /**
+     * @var array
+     */
+    protected $searchRules = ['filename' => 'like'];
+
+    /**
      * ImageServiceImpl constructor.
      * @param MediaRepository $repository
+     * @param Request $request
      */
-    public function __construct(MediaRepository $repository)
+    public function __construct(MediaRepository $repository, Request $request)
     {
+        parent::__construct($request);
         $this->disk = Config::get('media.disk', 'public');
+        $this->repository = $repository;
     }
 
     /**
@@ -198,5 +208,10 @@ class ImageServiceImpl implements ImageService
         }
 
         return $filename;
+    }
+
+    public function getRepository()
+    {
+        return $this->repository;
     }
 }
