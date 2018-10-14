@@ -39,6 +39,8 @@ class MediaServiceProvider extends BaseServiceProvider
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/media.php', 'media');
 
+        $this->registerRepositories();
+
         $this->registerMediaService();
 
         $this->registerFileService();
@@ -56,6 +58,14 @@ class MediaServiceProvider extends BaseServiceProvider
         $this->app->singleton('command.media.table', function ($app) {
             return new MediaTableCommand($app['files'], $app['composer']);
         });
+    }
+
+    protected function registerRepositories()
+    {
+        $this->app->singleton(
+            \Viviniko\Media\Repositories\MediaRepository::class,
+            \Viviniko\Media\Repositories\EloquentMedia::class
+        );
     }
 
     /**
