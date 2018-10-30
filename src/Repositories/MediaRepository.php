@@ -2,8 +2,19 @@
 
 namespace Viviniko\Media\Repositories;
 
+use Viviniko\Repository\SearchRequest;
+
 interface MediaRepository
 {
+    /**
+     * Search.
+     *
+     * @param SearchRequest $searchRequest
+     *
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|\Illuminate\Database\Eloquent\Collection
+     */
+    public function search(SearchRequest $searchRequest);
+
     /**
      * @param $id
      * @param $columns
@@ -24,6 +35,13 @@ interface MediaRepository
      * @return mixed
      */
     public function create(array $data);
+
+    /**
+     * @param null $column
+     * @param null $value
+     * @return mixed
+     */
+    public function count($column = null, $value = null);
 
     /**
      * @param $id

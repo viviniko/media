@@ -23,7 +23,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Medias Disk.
+    | Default Medias Disk.
     |--------------------------------------------------------------------------
     |
     | This is the medias disk.
@@ -33,6 +33,7 @@ return [
 
     'groups' => [
         'default' => [
+            'disk' => 'media',
             'dir_format' => 'default',
             'name_format' => '@',
         ]
