@@ -131,7 +131,8 @@ class ImageServiceImpl extends AbstractRequestRepositoryService implements Image
 
     private function generateFilename($file, $group, $hash)
     {
-        $clientFilename = $file instanceof UploadedFile ? $file->getClientOriginalName() : basename($file);
+        $clientFilename = $file instanceof UploadedFile ? $file->getClientOriginalName() : $file;
+        $clientFilename = basename(urldecode($clientFilename));
         $groupsConfig = Config::get('media.groups');
         $dirFormat = isset($groupsConfig[$group]['dir_format']) ? $groupsConfig[$group]['dir_format'] : null;
         $nameFormat = isset($groupsConfig[$group]['name_format']) ? $groupsConfig[$group]['name_format'] : null;
@@ -150,9 +151,9 @@ class ImageServiceImpl extends AbstractRequestRepositoryService implements Image
             $len = strlen($hash);
             $hashDir = $hash[$len-4] . $hash[$len-3] . '/' . $hash[$len-2] . $hash[$len-1];
             $hashDir3 = $hash[$len-6] . $hash[$len-5] . $hash[$len-4] . '/' . $hash[$len-3] . $hash[$len-2] . $hash[$len-1];
-            $slugName = str_slug($clientFilename);
+            $slugName = $basename . '.' . $ext;
             if (empty($slugName)) {
-                $slugName = $hash;
+                $slugName = str_slug($clientFilename) ?: $hash;
             }
             return str_replace([
                 '{group}',
