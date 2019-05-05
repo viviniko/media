@@ -8,6 +8,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
+use Viviniko\Media\Events\FileCreated;
 use Viviniko\Media\Events\FileDeleted;
 use Viviniko\Media\FileExistsException;
 use Viviniko\Media\Repositories\FileRepository;
@@ -70,7 +71,7 @@ class ImageServiceImpl implements ImageService
         $originalFilename = basename(urldecode($source instanceof UploadedFile ? $source->getClientOriginalName() : $source));
 
         Storage::disk($disk)->put($target, $data);
-        return $this->repository->create([
+        $file = $this->repository->create([
             'disk' => $disk,
             'object' => $target,
             'size' => $image->filesize(),
@@ -80,6 +81,9 @@ class ImageServiceImpl implements ImageService
             'md5' => $hash,
             'original_filename' => $originalFilename
         ]);
+        $this->dispatcher->dispatch(new FileCreated($file));
+
+        return $file;
     }
 
     /**
@@ -96,7 +100,7 @@ class ImageServiceImpl implements ImageService
         while (($target = $this->makeFilename($image->object, '_s', $disk)) && $this->repository->findBy(['disk' => $disk, 'object' => $target]));
 
         Storage::disk()->put($target, $data);
-        return $this->repository->create([
+        $file = $this->repository->create([
             'disk' => $disk,
             'object' => $target,
             'size' => $image->filesize(),
@@ -106,6 +110,9 @@ class ImageServiceImpl implements ImageService
             'md5' => $hash,
             'original_filename' => $image->original_filename,
         ]);
+        $this->dispatcher->dispatch(new FileCreated($file));
+
+        return $file;
     }
 
     /**
