@@ -63,8 +63,8 @@ class MediaServiceProvider extends BaseServiceProvider
     protected function registerRepositories()
     {
         $this->app->singleton(
-            \Viviniko\Media\Repositories\MediaRepository::class,
-            \Viviniko\Media\Repositories\EloquentMedia::class
+            \Viviniko\Media\Repositories\FileRepository::class,
+            \Viviniko\Media\Repositories\EloquentFile::class
         );
     }
 

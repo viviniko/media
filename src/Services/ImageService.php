@@ -5,13 +5,24 @@ namespace Viviniko\Media\Services;
 interface ImageService
 {
     /**
-     * Paginate repository.
-     * @param null $pageSize
-     * @param array $wheres
-     * @param array $orders
+     * Change disk.
+     *
+     * @param $disk
+     * @return $this
+     */
+    public function disk($disk);
+
+    /**
+     * Save a new entity in repository
+     *
+     * @param mixed $source
+     * @param string $target
+     * @param null $width
+     * @param null $height
+     * @param int $quality
      * @return mixed
      */
-    public function paginate($pageSize = null, $wheres = [], $orders = []);
+    public function save($source, $target, $width = null, $height = null, $quality = 75);
 
     /**
      * Get media public url.
@@ -20,18 +31,6 @@ interface ImageService
      * @return mixed
      */
     public function getUrl($id);
-
-    /**
-     * Save a new entity in repository
-     *
-     * @param $file
-     * @param string $dir
-     * @param null $width
-     * @param null $height
-     * @param int $quality
-     * @return mixed
-     */
-    public function save($file, $dir = 'default', $width = null, $height = null, $quality = 75);
 
     /**
      * @param $id

@@ -2,42 +2,40 @@
 
 namespace Viviniko\Media\Services\Impl;
 
-use Illuminate\Http\Request;
-use Viviniko\Media\Repositories\MediaRepository;
+use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
+use Viviniko\Media\FileExistsException;
+use Viviniko\Media\Repositories\FileRepository;
 use Viviniko\Media\Services\ImageService;
-use Viviniko\Support\AbstractRequestRepositoryService;
 
-class ImageServiceImpl extends AbstractRequestRepositoryService implements ImageService
+class ImageServiceImpl implements ImageService
 {
     /**
-     * @var \Viviniko\Media\Repositories\MediaRepository
+     * @var \Viviniko\Media\Repositories\FileRepository
      */
     protected $repository;
 
     /**
      * @var string
      */
-    protected $disk;
+    private $disk;
 
     /**
      * @var array
      */
-    protected $searchRules = ['filename' => 'like'];
+    protected $searchRules = ['original_filename' => 'like', 'object' => 'like'];
 
     /**
      * ImageServiceImpl constructor.
-     * @param MediaRepository $repository
-     * @param Request $request
+     * @param FileRepository $repository
      */
-    public function __construct(MediaRepository $repository, Request $request)
+    public function __construct(FileRepository $repository)
     {
-        parent::__construct($request);
-        $this->disk = Config::get('media.disk', 'public');
         $this->repository = $repository;
+        $this->disk = Config::get('media.disk');
     }
 
     /**
@@ -45,45 +43,39 @@ class ImageServiceImpl extends AbstractRequestRepositoryService implements Image
      */
     public function getUrl($id)
     {
-        return data_get($this->repository->find($id, ['disk', 'filename']), 'url');
+        return data_get($this->repository->find($id, ['disk', 'object']), 'url');
     }
 
     /**
      * {@inheritdoc}
      */
-    public function save($file, $group = 'default', $width = null, $height = null, $quality = 75)
+    public function save($source, $target, $width = null, $height = null, $quality = 75)
     {
-        $image = Image::make($file);
+        $disk = $this->disk;
+        if ($this->repository->findBy(['disk' => $disk, 'object' => $target])) {
+            throw new FileExistsException();
+        }
 
+        $image = Image::make($source);
+        $mimeType = $image->mime();
         if ($width || $height) {
             $image->resize($width, $height);
         }
+        $data = $image->encode($mimeType, $quality);
+        $hash = md5($data);
+        $originalFilename = basename(urldecode($source instanceof UploadedFile ? $source->getClientOriginalName() : $source));
 
-        $data = $image->encode($image->mime(), $quality);
-        $hash = sha1($data);
-        $disk = Config::get('media.groups.' . $group . '.disk', $this->disk);
-        //Create file if file is not exists, or return file instance
-        $existFile = $this->repository->findBy(['sha1' => $hash, 'disk' => $disk]);
-
-        if (!$existFile) {
-            $filename = $this->makeFilename($this->generateFilename($file, $group, $hash));
-            Storage::disk($disk)->put($filename, $data);
-
-            return $this->repository->create([
-                'filename' => $filename,
-                'size' => Storage::disk($disk)->size($filename),
-                'disk' => $disk,
-                'mime_type' => Storage::disk($disk)->mimeType($filename),
-                'sha1' => $hash,
-                'group' => $group
-            ]);
-        } else {
-            if (!Storage::disk($disk)->exists($existFile->filename)) {
-                Storage::disk($disk)->put($existFile->filename, $data);
-            }
-        }
-
-        return $existFile;
+        Storage::disk($disk)->put($target, $data);
+        return $this->repository->create([
+            'disk' => $disk,
+            'object' => $target,
+            'size' => $image->filesize(),
+            'mime_type' => $mimeType,
+            'width' => $image->width(),
+            'height' => $image->height(),
+            'md5' => $hash,
+            'original_filename' => $originalFilename
+        ]);
     }
 
     /**
@@ -92,29 +84,24 @@ class ImageServiceImpl extends AbstractRequestRepositoryService implements Image
     public function crop($id, $width, $height, $x = null, $y = null)
     {
         $image = $this->repository->find($id);
-        $crop = Image::make(Storage::disk($image->disk)->path($image->filename))->crop($width, $height, $x, $y);
+        $disk = $image->disk;
+        $crop = Image::make(Storage::disk($disk)->path($image->object))->crop($width, $height, $x, $y);
         $data = $crop->encode($image->mime_type, 100);
-        $hash = sha1($data);
-        //Create file if file is not exists, or return file instance
-        $existFile = $this->repository->findBy(['sha1' => $hash, 'disk' => $image->disk]);
-        if (!$existFile) {
-            $filename = $this->makeFilename($this->makeFilename($image->filename, '_s', $image->disk));
-            Storage::disk($image->disk)->put($filename, $data);
-            return $this->repository->create([
-                'filename' => $filename,
-                'size' => Storage::disk($image->disk)->size($filename),
-                'disk' => $image->disk,
-                'mime_type' => Storage::disk($image->disk)->mimeType($filename),
-                'sha1' => $hash,
-                'group' => $image->group,
-            ]);
-        } else {
-            if (!Storage::disk($image->disk)->exists($existFile->filename)) {
-                Storage::disk($image->disk)->put($existFile->filename, $data);
-            }
-        }
+        $hash = md5($data);
 
-        return $existFile;
+        while (($target = $this->makeFilename($image->object, '_s', $disk)) && $this->repository->findBy(['disk' => $disk, 'object' => $target]));
+
+        Storage::disk()->put($target, $data);
+        return $this->repository->create([
+            'disk' => $disk,
+            'object' => $target,
+            'size' => $image->filesize(),
+            'mime_type' => $image->mime_type,
+            'width' => $image->width(),
+            'height' => $image->height(),
+            'md5' => $hash,
+            'original_filename' => $image->original_filename,
+        ]);
     }
 
     /**
@@ -123,76 +110,20 @@ class ImageServiceImpl extends AbstractRequestRepositoryService implements Image
     public function delete($id)
     {
         if ($media = $this->repository->find($id)) {
-            Storage::disk($media->disk)->delete($media->filename);
+            Storage::disk($media->disk)->delete($media->object);
         }
 
         return $this->repository->delete($id);
     }
 
-    private function generateFilename($file, $group, $hash)
+    /**
+     * {@inheritdoc}
+     */
+    public function disk($disk)
     {
-        $clientFilename = $file instanceof UploadedFile ? $file->getClientOriginalName() : $file;
-        $clientFilename = basename(urldecode($clientFilename));
-        $groupsConfig = Config::get('media.groups');
-        $dirFormat = isset($groupsConfig[$group]['dir_format']) ? $groupsConfig[$group]['dir_format'] : null;
-        $nameFormat = isset($groupsConfig[$group]['name_format']) ? $groupsConfig[$group]['name_format'] : null;
-        $groupDir = implode('/', array_map(function ($sub) {
-            return str_slug($sub, '_');
-        }, explode('.', $group)));
-        $doFormat = function ($format, $group = null, $clientFilename = null, $hash = null) {
-            $basename = $clientFilename;
-            $ext = '';
-            if (($dotPos = strrpos($clientFilename, '.')) !== false) {
-                $basename = implode('/', array_map(function ($sub) {
-                    return str_slug($sub, '_');
-                }, explode('/', substr($clientFilename, 0, $dotPos))));
-                $ext = strtolower(substr($clientFilename, $dotPos));
-            }
-            $len = strlen($hash);
-            $hashDir = $hash[$len-4] . $hash[$len-3] . '/' . $hash[$len-2] . $hash[$len-1];
-            $hashDir3 = $hash[$len-6] . $hash[$len-5] . $hash[$len-4] . '/' . $hash[$len-3] . $hash[$len-2] . $hash[$len-1];
-            $slugName = $basename . '.' . $ext;
-            if (empty($slugName)) {
-                $slugName = str_slug($clientFilename) ?: $hash;
-            }
-            return str_replace([
-                '{group}',
-                '{origin_name}',
-                '{slug_name}',
-                '{base_name}',
-                '{ext}',
-                '{hash}',
-                '{hash_dir}',
-                '{hash_dir_3}',
-                '{YYYY}',
-                '{YY}',
-                '{MM}',
-                '{DD}',
-            ], [
-                $group,
-                $clientFilename,
-                $slugName,
-                $basename,
-                $ext,
-                $hash,
-                $hashDir,
-                $hashDir3,
-                date('Y'),
-                date('y'),
-                date('m'),
-                date('d')
-            ], $format);
-        };
-        $dir = trim($dirFormat ? $doFormat($dirFormat, $groupDir, $clientFilename, $hash) : $groupDir, '/');
-        if ($nameFormat == '@' && strpos($clientFilename, '@') !== false) {
-            $filenamePaths = explode('@', $clientFilename);
-            $clientFilename = array_pop($filenamePaths);
-            $filename = implode('/', $filenamePaths) . '/' . $clientFilename;
-        } else {
-            $filename = $doFormat('{hash_dir}/{slug_name}', $groupDir, $clientFilename, $hash);
-        }
+        $this->disk = $disk;
 
-        return $dir . '/' . $filename;
+        return $this;
     }
 
     private function makeFilename($filename, $suffix = '', $disk = null)
@@ -201,7 +132,7 @@ class ImageServiceImpl extends AbstractRequestRepositoryService implements Image
         $ext = '';
         if (($dotPos = strrpos($filename, '.')) !== false) {
             $basename = implode('/', array_map(function ($sub) {
-                return str_slug($sub, '_');
+                return Str::slug($sub, '_');
             }, explode('/', substr($filename, 0, $dotPos))));
             $ext = strtolower(substr($filename, $dotPos));
         }
@@ -216,10 +147,5 @@ class ImageServiceImpl extends AbstractRequestRepositoryService implements Image
         }
 
         return $filename;
-    }
-
-    public function getRepository()
-    {
-        return $this->repository;
     }
 }

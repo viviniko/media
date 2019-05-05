@@ -10,14 +10,14 @@ class CreateMediaTable extends Migration
     /**
      * @var string
      */
-    protected $mediasTable;
+    protected $filesTable;
 
     /**
      * CreateCustomerTable constructor.
      */
     public function __construct()
     {
-        $this->mediasTable = Config::get('media.medias_table');
+        $this->filesTable = (new (Config::get('media.file')))->getTable();
     }
 
     /**
@@ -28,17 +28,19 @@ class CreateMediaTable extends Migration
     public function up()
     {
         // Create table for storing medias
-        Schema::create($this->mediasTable, function (Blueprint $table) {
+        Schema::create($this->filesTable, function (Blueprint $table) {
             $table->increments('id');
-            $table->string('filename');
-            $table->unsignedInteger('size');
-            $table->string('mime_type');
             $table->string('disk');
-            $table->string('group', 64);
-            $table->string('sha1', 40);
+            $table->string('object');
+            $table->unsignedInteger('size');
+            $table->unsignedInteger('width')->default(0);
+            $table->unsignedInteger('height')->default(0);
+            $table->string('mime_type');
+            $table->string('original_filename');
+            $table->string('md5', 32);
             $table->timestamps();
 
-            $table->unique(['disk', 'sha1']);
+            $table->unique(['disk', 'object']);
         });
     }
 
@@ -49,6 +51,6 @@ class CreateMediaTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists($this->mediasTable);
+        Schema::dropIfExists($this->filesTable);
     }
 }

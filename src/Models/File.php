@@ -5,17 +5,15 @@ namespace Viviniko\Media\Models;
 use Viviniko\Support\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
-class Media extends Model
+class File extends Model
 {
-    protected $tableConfigKey = 'media.medias_table';
+    protected $tableConfigKey = 'media.files_table';
 
-    protected $fillable = ['filename', 'size', 'disk', 'mime_type', 'sha1', 'group'];
-
-    protected $appends = ['url'];
+    protected $fillable = ['disk', 'object', 'size', 'mime_type', 'width', 'height', 'md5', 'original_filename'];
 
     public function getUrlAttribute()
     {
-        return Storage::disk($this->disk)->url($this->filename);
+        return Storage::disk($this->disk)->url($this->object);
     }
 
     public function getReadableSizeAttribute()

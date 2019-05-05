@@ -3,39 +3,31 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Media Model
+    | File Model
     |--------------------------------------------------------------------------
     |
-    | This is the Media model.
+    | This is the File model.
     |
     */
-    'media' => 'Viviniko\Media\Models\Media',
+    'file' => 'Viviniko\Media\Models\File',
 
     /*
     |--------------------------------------------------------------------------
-    | Medias Table
+    | Files Table
     |--------------------------------------------------------------------------
     |
-    | This is the medias table.
+    | This is the files table.
     |
     */
-    'medias_table' => 'media_medias',
+    'files_table' => 'media_files',
 
     /*
     |--------------------------------------------------------------------------
-    | Default Medias Disk.
+    | Default Media Disk.
     |--------------------------------------------------------------------------
     |
-    | This is the medias disk.
+    | This is the media disk.
     |
     */
     'disk' => 'media',
-
-    'groups' => [
-        'default' => [
-            'disk' => 'media',
-            'dir_format' => 'default',
-            'name_format' => '@',
-        ]
-    ],
 ];

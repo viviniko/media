@@ -4,7 +4,7 @@ namespace Viviniko\Media\Repositories;
 
 use Viviniko\Repository\SearchRequest;
 
-interface MediaRepository
+interface FileRepository
 {
     /**
      * Search.
