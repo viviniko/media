@@ -2,11 +2,13 @@
 
 namespace Viviniko\Media\Services\Impl;
 
+use Illuminate\Contracts\Bus\Dispatcher;
 use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
+use Viviniko\Media\Events\FileDeleted;
 use Viviniko\Media\FileExistsException;
 use Viviniko\Media\Repositories\FileRepository;
 use Viviniko\Media\Services\ImageService;
@@ -16,7 +18,7 @@ class ImageServiceImpl implements ImageService
     /**
      * @var \Viviniko\Media\Repositories\FileRepository
      */
-    protected $repository;
+    private $repository;
 
     /**
      * @var string
@@ -24,17 +26,19 @@ class ImageServiceImpl implements ImageService
     private $disk;
 
     /**
-     * @var array
+     * @var \Illuminate\Contracts\Bus\Dispatcher
      */
-    protected $searchRules = ['original_filename' => 'like', 'object' => 'like'];
+    private $dispatcher;
 
     /**
      * ImageServiceImpl constructor.
-     * @param FileRepository $repository
+     * @param \Viviniko\Media\Repositories\FileRepository $repository
+     * @param \Illuminate\Contracts\Bus\Dispatcher $dispatcher
      */
-    public function __construct(FileRepository $repository)
+    public function __construct(FileRepository $repository, Dispatcher $dispatcher)
     {
         $this->repository = $repository;
+        $this->dispatcher = $dispatcher;
         $this->disk = Config::get('media.disk');
     }
 
@@ -43,7 +47,7 @@ class ImageServiceImpl implements ImageService
      */
     public function getUrl($id)
     {
-        return data_get($this->repository->find($id, ['disk', 'object']), 'url');
+        return data_get($this->repository->find($id), 'url');
     }
 
     /**
@@ -109,11 +113,17 @@ class ImageServiceImpl implements ImageService
      */
     public function delete($id)
     {
-        if ($media = $this->repository->find($id)) {
-            Storage::disk($media->disk)->delete($media->object);
-        }
+        $file = $this->repository->find($id);
 
-        return $this->repository->delete($id);
+        if (!$file) return 0;
+
+        $result = $this->repository->delete($id);
+
+        Storage::disk($file->disk)->delete($file->object);
+
+        $this->dispatcher->dispatch(new FileDeleted($file));
+
+        return $result;
     }
 
     /**
