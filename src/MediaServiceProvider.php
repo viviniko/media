@@ -41,9 +41,7 @@ class MediaServiceProvider extends BaseServiceProvider
 
         $this->registerRepositories();
 
-        $this->registerMediaService();
-
-        $this->registerFileService();
+        $this->registerServices();
 
         $this->registerCommands();
     }
@@ -73,19 +71,11 @@ class MediaServiceProvider extends BaseServiceProvider
      *
      * @return void
      */
-    protected function registerMediaService()
+    protected function registerServices()
     {
         $this->app->singleton(
             \Viviniko\Media\Services\ImageService::class,
             \Viviniko\Media\Services\Impl\ImageServiceImpl::class
-        );
-    }
-
-    private function registerFileService()
-    {
-        $this->app->singleton(
-            \Viviniko\Media\Services\FileService::class,
-            \Viviniko\Media\Services\Impl\FileServiceImpl::class
         );
     }
 
@@ -98,7 +88,6 @@ class MediaServiceProvider extends BaseServiceProvider
     {
         return [
             \Viviniko\Media\Services\ImageService::class,
-            \Viviniko\Media\Services\FileService::class,
         ];
     }
 }
