@@ -26,7 +26,10 @@
         "laravel": {
             "providers": [
                 "Viviniko\\Media\\MediaServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "Files": "Viviniko\\Media\\Facades\\Files"
+            }
         }
     },
     "minimum-stability": "dev",

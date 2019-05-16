@@ -6,5 +6,5 @@ use Viviniko\Repository\CrudRepository;
 
 interface FileRepository extends CrudRepository
 {
-    
+
 }
