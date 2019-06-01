@@ -33,8 +33,6 @@ class CreateMediaTable extends Migration
             $table->string('disk');
             $table->string('object');
             $table->unsignedInteger('size');
-            $table->unsignedInteger('width')->default(0);
-            $table->unsignedInteger('height')->default(0);
             $table->string('mime_type');
             $table->string('original_filename');
             $table->string('md5', 32);

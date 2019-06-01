@@ -9,7 +9,7 @@ class File extends Model
 {
     protected $tableConfigKey = 'media.files_table';
 
-    protected $fillable = ['disk', 'object', 'size', 'mime_type', 'width', 'height', 'md5', 'original_filename'];
+    protected $fillable = ['disk', 'object', 'size', 'mime_type', 'md5', 'original_filename'];
 
     public function getUrlAttribute()
     {
