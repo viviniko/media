@@ -2,7 +2,7 @@
 
 namespace Viviniko\Media\Services\Impl;
 
-use Illuminate\Contracts\Bus\Dispatcher;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
@@ -34,7 +34,7 @@ class ImageServiceImpl implements ImageService
     /**
      * ImageServiceImpl constructor.
      * @param \Viviniko\Media\Repositories\FileRepository $repository
-     * @param \Illuminate\Contracts\Bus\Dispatcher $dispatcher
+     * @param \Illuminate\Contracts\Events\Dispatcher $dispatcher
      */
     public function __construct(FileRepository $repository, Dispatcher $dispatcher)
     {
