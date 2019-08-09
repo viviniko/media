@@ -99,14 +99,14 @@ class ImageServiceImpl implements ImageService
 
         while (($target = $this->makeFilename($image->object, '_s', $disk)) && $this->repository->findBy(['disk' => $disk, 'object' => $target]));
 
-        Storage::disk()->put($target, $data);
+        Storage::disk($disk)->put($target, $data);
         $file = $this->repository->create([
             'disk' => $disk,
             'object' => $target,
-            'size' => $image->filesize(),
-            'mime_type' => $image->mime_type,
-            'width' => $image->width(),
-            'height' => $image->height(),
+            'size' => $crop->filesize(),
+            'mime_type' => $crop->mime(),
+            'width' => $crop->width(),
+            'height' => $crop->height(),
             'md5' => $hash,
             'original_filename' => $image->original_filename,
         ]);
