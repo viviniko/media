@@ -3,15 +3,19 @@
 namespace Viviniko\Media;
 
 use Exception;
-use Throwable;
 
 class FileExistsException extends Exception
 {
-    private $file;
+    private $existsFile;
 
-    public function __construct($file)
+    public function __construct($existsFile)
     {
-        parent::__construct("Disk [$file->disk] File exists:  $file->object");
-        $this->file = $file;
+        parent::__construct("Disk [$existsFile->disk] File exists:  $existsFile->object");
+        $this->existsFile = $existsFile;
+    }
+
+    public function getExistsFile()
+    {
+        return $this->existsFile;
     }
 }
