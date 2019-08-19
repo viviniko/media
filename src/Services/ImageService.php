@@ -20,9 +20,22 @@ interface ImageService
      * @param null $width
      * @param null $height
      * @param int $quality
-     * @return mixed
+     * @return \Viviniko\Media\Models\File
      */
     public function save($source, $target, $width = null, $height = null, $quality = 75);
+
+    /**
+     * Save a new entity in repository
+     *
+     * @param mixed $source
+     * @param string $target
+     * @param null $width
+     * @param null $height
+     * @param int $quality
+     * @return \Viviniko\Media\Models\File
+     * @throws \Viviniko\Media\FileExistsException
+     */
+    public function put($source, $target, $width = null, $height = null, $quality = 75);
 
     /**
      * Get media public url.

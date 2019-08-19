@@ -56,9 +56,20 @@ class ImageServiceImpl implements ImageService
      */
     public function save($source, $target, $width = null, $height = null, $quality = 75)
     {
+        while (true) {
+            try {
+                return $this->put($source, $target, $width, $height, $quality);
+            } catch (FileExistsException $ex) {
+                $target = $this->makeFilename($target, '', $this->disk);
+            }
+        }
+    }
+
+    public function put($source, $target, $width = null, $height = null, $quality = 75)
+    {
         $disk = $this->disk;
         if ($exists = $this->repository->findBy(['disk' => $disk, 'object' => $target])) {
-            throw new FileExistsException($exists);
+            throw new FileExistsException("Disk [$exists->disk] File exists:  $exists->object");
         }
 
         $image = Image::make($source);
