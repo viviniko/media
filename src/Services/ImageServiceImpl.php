@@ -58,7 +58,7 @@ class ImageServiceImpl implements ImageService
     {
         $disk = $this->disk;
         if ($this->repository->findBy(['disk' => $disk, 'object' => $target])) {
-            throw new FileExistsException();
+            throw new FileExistsException("Disk [$disk] File exists:  $target");
         }
 
         $image = Image::make($source);
