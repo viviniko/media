@@ -12,6 +12,7 @@ use Intervention\Image\Facades\Image;
 use Viviniko\Media\Events\FileCreated;
 use Viviniko\Media\Events\FileDeleted;
 use Viviniko\Media\FileExistsException;
+use Viviniko\Media\Models\File;
 use Viviniko\Media\Repositories\FileRepository;
 use Viviniko\Media\Services\ImageService;
 
@@ -103,9 +104,9 @@ class ImageServiceImpl implements ImageService
      */
     public function crop($id, $width, $height, $x = null, $y = null)
     {
-        $image = $this->repository->find($id);
+        $image = $id instanceof File ? $id : $this->repository->find($id);
         $disk = $image->disk;
-        $crop = Image::make(Storage::disk($disk)->get($image->object))->crop($width, $height, $x, $y);
+        $crop = Image::make($image->content)->crop($width, $height, $x, $y);
         $data = $crop->encode($image->mime_type, 100)->getEncoded();
         $hash = md5($data);
         while (($target = $this->makeFilename($image->object, '_s', $disk)) && $this->repository->findBy(['disk' => $disk, 'object' => $target]));
