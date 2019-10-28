@@ -104,8 +104,8 @@ class ImageServiceImpl implements ImageService
     {
         $image = $this->repository->find($id);
         $disk = $image->disk;
-        $crop = Image::make(Storage::disk($disk)->path($image->object))->crop($width, $height, $x, $y);
-        $data = $crop->encode($image->mime_type, 100);
+        $crop = Image::make(Storage::disk($disk)->get($image->object))->crop($width, $height, $x, $y);
+        $data = $crop->encode($image->mime_type, 100)->getEncoded();
         $hash = md5($data);
 
         while (($target = $this->makeFilename($image->object, '_s', $disk)) && $this->repository->findBy(['disk' => $disk, 'object' => $target]));
