@@ -3,6 +3,7 @@
 namespace Viviniko\Media\Services\Impl;
 
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
@@ -80,18 +81,18 @@ class ImageServiceImpl implements ImageService
         $data = $image->encode($mimeType, $quality)->getEncoded();
         $hash = md5($data);
         $originalFilename = basename(urldecode($source instanceof UploadedFile ? $source->getClientOriginalName() : $source));
-
-        Storage::disk($disk)->put($target, $data);
-        $file = $this->repository->create([
+        $attributes = [
             'disk' => $disk,
             'object' => $target,
-            'size' => $image->filesize(),
+            'size' => strlen($data),
             'mime_type' => $mimeType,
-            'width' => $image->width(),
-            'height' => $image->height(),
             'md5' => $hash,
             'original_filename' => $originalFilename
-        ]);
+        ];
+        $file = DB::transaction(function () use ($attributes, $data) {
+            return $this->repository->create($attributes)->setContent($data);
+        });
+
         $this->dispatcher->dispatch(new FileCreated($file));
 
         return $file;
@@ -107,20 +108,19 @@ class ImageServiceImpl implements ImageService
         $crop = Image::make(Storage::disk($disk)->get($image->object))->crop($width, $height, $x, $y);
         $data = $crop->encode($image->mime_type, 100)->getEncoded();
         $hash = md5($data);
-
         while (($target = $this->makeFilename($image->object, '_s', $disk)) && $this->repository->findBy(['disk' => $disk, 'object' => $target]));
-
-        Storage::disk($disk)->put($target, $data);
-        $file = $this->repository->create([
+        $attributes = [
             'disk' => $disk,
             'object' => $target,
-            'size' => $crop->filesize(),
+            'size' => strlen($data),
             'mime_type' => $crop->mime(),
-            'width' => $crop->width(),
-            'height' => $crop->height(),
             'md5' => $hash,
             'original_filename' => $image->original_filename,
-        ]);
+        ];
+        $file = DB::transaction(function () use ($attributes, $data) {
+            return $this->repository->create($attributes)->setContent($data);
+        });
+
         $this->dispatcher->dispatch(new FileCreated($file));
 
         return $file;

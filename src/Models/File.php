@@ -11,6 +11,10 @@ class File extends Model
 
     protected $fillable = ['disk', 'object', 'size', 'mime_type', 'md5', 'original_filename'];
 
+    protected $hidden = ['content'];
+
+    private $content;
+
     public function getUrlAttribute()
     {
         return Storage::disk($this->disk)->url($this->object);
@@ -26,5 +30,21 @@ class File extends Model
         }
 
         return round($bytes, 2) . ' ' . $units[$i];
+    }
+
+    public function getContentAttribute()
+    {
+        if (!$this->content) {
+            $this->content = Storage::disk($this->disk)->get($this->object);
+        }
+        return $this->content;
+    }
+
+    public function setContent($content)
+    {
+        Storage::disk($this->disk)->put($this->object, $content);
+        $this->content = $content;
+
+        return $this;
     }
 }
