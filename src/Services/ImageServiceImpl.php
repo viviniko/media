@@ -77,7 +77,7 @@ class ImageServiceImpl implements ImageService
         if ($width || $height) {
             $image->resize($width, $height);
         }
-        $data = $image->encode($mimeType, $quality);
+        $data = $image->encode($mimeType, $quality)->getEncoded();
         $hash = md5($data);
         $originalFilename = basename(urldecode($source instanceof UploadedFile ? $source->getClientOriginalName() : $source));
 
