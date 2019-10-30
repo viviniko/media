@@ -99,23 +99,27 @@ class ImageServiceImpl implements ImageService
     {
         $image = $id instanceof File ? $id : $this->repository->find($id);
         $disk = $image->disk;
-        $crop = Image::make($image->content)->crop($width, $height, $x, $y);
-        $data = $crop->encode($image->mime_type, 100)->getEncoded();
-        $hash = md5($data);
-        while (($target = $this->makeFilename($image->object, '_s', $disk)) && $this->repository->findBy(['disk' => $disk, 'object' => $target]));
-        $attributes = [
-            'disk' => $disk,
-            'object' => $target,
-            'size' => strlen($data),
-            'mime_type' => $crop->mime(),
-            'md5' => $hash,
-            'original_filename' => $image->original_filename,
-        ];
-        $file = DB::transaction(function () use ($attributes, $data) {
-            return $this->repository->create($attributes)->setContent($data);
-        });
+        $target = $this->makeFilename($image->object, '!' . base64_encode("cropped:$width:$height:$x:$y"));
 
-        $this->dispatcher->dispatch(new FileCreated($file));
+        $file = $this->get($target, $disk);
+        if (!$file) {
+            $crop = Image::make($image->content)->crop($width, $height, $x, $y);
+            $data = $crop->encode($image->mime_type, 100)->getEncoded();
+            $hash = md5($data);
+            $attributes = [
+                'disk' => $disk,
+                'object' => $target,
+                'size' => strlen($data),
+                'mime_type' => $crop->mime(),
+                'md5' => $hash,
+                'original_filename' => $image->original_filename,
+            ];
+            $file = DB::transaction(function () use ($attributes, $data) {
+                return $this->repository->create($attributes)->setContent($data);
+            });
+
+            $this->dispatcher->dispatch(new FileCreated($file));
+        }
 
         return $file;
     }
@@ -160,11 +164,11 @@ class ImageServiceImpl implements ImageService
         }
         $basename .= $suffix;
         $filename = $basename . $ext;
-        $i = 1;
-        while (Storage::disk($disk ?? $this->disk)->exists($filename)) {
-            $filename = "{$basename}-{$i}{$ext}";
-            if (++$i > 10000) {
-                throw new \Exception('Error file name');
+
+        if ($disk) {
+            $i = 1;
+            while (Storage::disk($disk)->exists($filename)) {
+                $filename = "{$basename}-{$i}{$ext}";
             }
         }
 
