@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
 use Viviniko\Media\Events\FileCreated;
 use Viviniko\Media\Events\FileDeleted;
-use Viviniko\Media\FileExistsException;
+use Viviniko\Media\Events\FileUpdated;
 use Viviniko\Media\Models\File;
 use Viviniko\Media\Repositories\FileRepository;
 use Viviniko\Media\Services\ImageService;
@@ -56,24 +56,17 @@ class ImageServiceImpl implements ImageService
     /**
      * {@inheritdoc}
      */
-    public function save($source, $target, $width = null, $height = null, $quality = 75)
+    public function has($object, $disk = null)
     {
-        while (true) {
-            try {
-                return $this->put($source, $target, $width, $height, $quality);
-            } catch (FileExistsException $ex) {
-                $target = $this->makeFilename($target, '', $this->disk);
-            }
-        }
+        return $this->repository->exists(['disk' => $disk ?: $this->disk, 'object' => $object]);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function put($source, $target, $width = null, $height = null, $quality = 75)
     {
         $disk = $this->disk;
-        if ($exists = $this->repository->findBy(['disk' => $disk, 'object' => $target])) {
-            throw new FileExistsException("Disk [$exists->disk] File exists:  $exists->object");
-        }
-
         $image = Image::make($source);
         $mimeType = $image->mime();
         if ($width || $height) {
@@ -90,11 +83,11 @@ class ImageServiceImpl implements ImageService
             'md5' => $hash,
             'original_filename' => $originalFilename
         ];
-        $file = DB::transaction(function () use ($attributes, $data) {
-            return $this->repository->create($attributes)->setContent($data);
+        $exists = $this->repository->findBy(['disk' => $attributes['disk'], 'object' => $attributes['object']]);
+        $file = DB::transaction(function () use ($attributes, $data, $exists) {
+            return ($exists ?: $this->repository->create($attributes))->setContent($data);
         });
-
-        $this->dispatcher->dispatch(new FileCreated($file));
+        $this->dispatcher->dispatch($exists ? new FileUpdated($file) : new FileCreated($file));
 
         return $file;
     }

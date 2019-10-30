@@ -13,16 +13,13 @@ interface ImageService
     public function disk($disk);
 
     /**
-     * Save a new entity in repository
+     * Object Exists.
      *
-     * @param mixed $source
-     * @param string $target
-     * @param null $width
-     * @param null $height
-     * @param int $quality
-     * @return \Viviniko\Media\Models\File
+     * @param string $object
+     * @param mixed $disk
+     * @return boolean
      */
-    public function save($source, $target, $width = null, $height = null, $quality = 75);
+    public function exists($object, $disk = null);
 
     /**
      * Save a new entity in repository
