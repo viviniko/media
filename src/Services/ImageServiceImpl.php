@@ -99,7 +99,7 @@ class ImageServiceImpl implements ImageService
     {
         $image = $id instanceof File ? $id : $this->repository->find($id);
         $disk = $image->disk;
-        $target = $this->makeFilename($image->object, '!' . base64_encode("cropped:$width:$height:$x:$y"));
+        $target = $this->makeFilename($image->object, '!' . "crop-{$width}_{$height}_{$x}_{$y}");
 
         $file = $this->get($target, $disk);
         if (!$file) {
