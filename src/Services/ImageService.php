@@ -19,7 +19,7 @@ interface ImageService
      * @param mixed $disk
      * @return boolean
      */
-    public function exists($object, $disk = null);
+    public function has($object, $disk = null);
 
     /**
      * Save a new entity in repository
@@ -30,17 +30,17 @@ interface ImageService
      * @param null $height
      * @param int $quality
      * @return \Viviniko\Media\Models\File
-     * @throws \Viviniko\Media\FileExistsException
      */
     public function put($source, $target, $width = null, $height = null, $quality = 75);
 
     /**
-     * Get media public url.
+     * Get Object.
      *
-     * @param $id
-     * @return mixed
+     * @param string $object
+     * @param mixed $disk
+     * @return boolean
      */
-    public function getUrl($id);
+    public function get($object, $disk = null);
 
     /**
      * @param $id

@@ -48,9 +48,9 @@ class ImageServiceImpl implements ImageService
     /**
      * {@inheritdoc}
      */
-    public function getUrl($id)
+    public function get($object, $disk = null)
     {
-        return data_get($this->repository->find($id), 'url');
+        return $this->repository->findBy(['disk' => $disk ?: $this->disk, 'object' => $object]);
     }
 
     /**
