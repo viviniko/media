@@ -48,8 +48,12 @@ class MediaServiceProvider extends BaseServiceProvider
             $debug     = empty($config['debug']) ? false : $config['debug'];
             $endPoint  = $config['endpoint'];
 
-            $client  = new OssClient($accessId, $accessKey, $endPoint, !empty($cdnDomain) && $cdnDomain == $endPoint);
-            $adapter = new AliOssAdapter($client, $bucket, $endPoint, $ssl, $debug, $cdnDomain);
+            $adapter = new AliOssAdapter(
+                (empty($accessId) || empty($accessKey) || empty($endPoint)) ?
+                    null :
+                    new OssClient($accessId, $accessKey, $endPoint, !empty($cdnDomain) && $cdnDomain == $endPoint),
+                $bucket, $endPoint, $ssl, $debug, $cdnDomain
+            );
             $filesystem =  new Filesystem($adapter);
             $filesystem->addPlugin(new PutFile());
             $filesystem->addPlugin(new PutRemoteFile());

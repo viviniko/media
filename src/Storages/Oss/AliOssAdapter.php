@@ -81,6 +81,7 @@ class AliOssAdapter extends AbstractAdapter
      * @param string    $endPoint
      * @param bool      $ssl
      * @param bool      $debug
+     * @param string    $cdnDomain
      * @param null      $prefix
      * @param array     $options
      */
