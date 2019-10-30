@@ -2,8 +2,16 @@
 
 namespace Viviniko\Media;
 
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
+use League\Flysystem\Filesystem;
+use OSS\OssClient;
 use Viviniko\Media\Console\Commands\MediaTableCommand;
+use Viviniko\Media\Storages\Oss\AliOssAdapter;
+use Viviniko\Media\Storages\Oss\PutFile;
+use Viviniko\Media\Storages\Oss\PutRemoteFile;
+
+
 
 class MediaServiceProvider extends BaseServiceProvider
 {
@@ -28,6 +36,26 @@ class MediaServiceProvider extends BaseServiceProvider
 
         // Register commands
         $this->commands('command.media.table');
+
+        Storage::extend('oss', function($app, $config)
+        {
+            $accessId  = $config['access_id'];
+            $accessKey = $config['access_key'];
+
+            $cdnDomain = empty($config['cdnDomain']) ? '' : $config['cdnDomain'];
+            $bucket    = $config['bucket'];
+            $ssl       = empty($config['ssl']) ? false : $config['ssl'];
+            $debug     = empty($config['debug']) ? false : $config['debug'];
+            $endPoint  = $config['endpoint'];
+
+            $client  = new OssClient($accessId, $accessKey, $endPoint, !empty($cdnDomain) && $cdnDomain == $endPoint);
+            $adapter = new AliOssAdapter($client, $bucket, $endPoint, $ssl, $debug, $cdnDomain);
+            $filesystem =  new Filesystem($adapter);
+            $filesystem->addPlugin(new PutFile());
+            $filesystem->addPlugin(new PutRemoteFile());
+            //$filesystem->addPlugin(new CallBack());
+            return $filesystem;
+        });
     }
 
     /**

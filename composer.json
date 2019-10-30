@@ -12,6 +12,7 @@
     ],
     "require": {
         "php": ">=7.0",
+        "aliyuncs/oss-sdk-php": "~2.0",
         "illuminate/http": "~5.0",
         "intervention/image": "^2.5",
         "viviniko/repository": "dev-master",
