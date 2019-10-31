@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
 use Viviniko\Media\Events\FileCreated;
-use Viviniko\Media\Events\FileDeleted;
 use Viviniko\Media\Events\FileUpdated;
 use Viviniko\Media\Models\File;
 use Viviniko\Media\Repositories\FileRepository;
@@ -85,9 +84,8 @@ class ImageServiceImpl implements ImageService
         ];
         $exists = $this->repository->findBy(['disk' => $attributes['disk'], 'object' => $attributes['object']]);
         $file = DB::transaction(function () use ($attributes, $data, $exists) {
-            return ($exists ?: $this->repository->create($attributes))->setContent($data);
+            return ($exists ? $exists->update($attributes) : $this->repository->create($attributes))->setContent($data);
         });
-        $this->dispatcher->dispatch($exists ? new FileUpdated($file) : new FileCreated($file));
 
         return $file;
     }
@@ -117,8 +115,6 @@ class ImageServiceImpl implements ImageService
             $file = DB::transaction(function () use ($attributes, $data) {
                 return $this->repository->create($attributes)->setContent($data);
             });
-
-            $this->dispatcher->dispatch(new FileCreated($file));
         }
 
         return $file;
@@ -129,17 +125,7 @@ class ImageServiceImpl implements ImageService
      */
     public function delete($id)
     {
-        $file = $this->repository->find($id);
-
-        if (!$file) return 0;
-
-        $result = $this->repository->delete($id);
-
-        Storage::disk($file->disk)->delete($file->object);
-
-        $this->dispatcher->dispatch(new FileDeleted($file));
-
-        return $result;
+        return $this->repository->delete($id);
     }
 
     /**

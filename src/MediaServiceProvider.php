@@ -7,11 +7,11 @@ use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use League\Flysystem\Filesystem;
 use OSS\OssClient;
 use Viviniko\Media\Console\Commands\MediaTableCommand;
+use Viviniko\Media\Models\File;
+use Viviniko\Media\Observers\FileObserver;
 use Viviniko\Media\Storages\Oss\AliOssAdapter;
 use Viviniko\Media\Storages\Oss\PutFile;
 use Viviniko\Media\Storages\Oss\PutRemoteFile;
-
-
 
 class MediaServiceProvider extends BaseServiceProvider
 {
@@ -60,6 +60,8 @@ class MediaServiceProvider extends BaseServiceProvider
             //$filesystem->addPlugin(new CallBack());
             return $filesystem;
         });
+
+        File::observe(FileObserver::class);
     }
 
     /**
