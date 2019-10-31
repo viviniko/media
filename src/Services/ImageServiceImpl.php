@@ -82,12 +82,18 @@ class ImageServiceImpl implements ImageService
             'md5' => $hash,
             'original_filename' => $originalFilename
         ];
-        $exists = $this->repository->findBy(['disk' => $attributes['disk'], 'object' => $attributes['object']]);
-        $file = DB::transaction(function () use ($attributes, $data, $exists) {
-            return ($exists ? $exists->update($attributes) : $this->repository->create($attributes))->setContent($data);
-        });
 
-        return $file;
+        return DB::transaction(function () use ($attributes, $data) {
+            if ($file = $this->repository->findBy(['disk' => $attributes['disk'], 'object' => $attributes['object']])) {
+                if (!empty($file->md5) && $file->md5 !== $attributes['md5']) {
+                    $file = $this->repository->update($file->id, $attributes)->setContent($data);
+                }
+            } else {
+                $file = $this->repository->create($attributes)->setContent($data);
+            }
+
+            return $file;
+        });
     }
 
     /**
