@@ -62,7 +62,7 @@ class AliOssAdapter extends AbstractAdapter
     protected $bucket;
 
     protected $endPoint;
-    
+
     protected $cdnDomain;
 
     protected $ssl;
@@ -313,6 +313,7 @@ class AliOssAdapter extends AbstractAdapter
      */
     public function listDirObjects($dirname = '', $recursive =  false)
     {
+        $dirname = rtrim($dirname, '/') . '/';
         $delimiter = '/';
         $nextMarker = '';
         $maxkeys = 1000;
@@ -470,9 +471,11 @@ class AliOssAdapter extends AbstractAdapter
      */
     public function listContents($directory = '', $recursive = false)
     {
-        $dirObjects = $this->listDirObjects($directory, $recursive);
-        $contents = $dirObjects["objects"];
 
+        $dirObjects = $this->listDirObjects($directory, $recursive);
+        $contents = array_merge($dirObjects["objects"], array_map(function ($prefix) {
+            return ['Prefix' => $prefix];
+        }, $dirObjects['prefix']));
         $result = array_map([$this, 'normalizeResponse'], $contents);
         $result = array_filter($result, function ($value) {
             return $value['path'] !== false;
@@ -540,7 +543,7 @@ class AliOssAdapter extends AbstractAdapter
             $this->logErr(__FUNCTION__, $e);
             return false;
         }
-        
+
         if ($acl == OssClient::OSS_ACL_TYPE_PUBLIC_READ ){
             $res['visibility'] = AdapterInterface::VISIBILITY_PUBLIC;
         }else{
@@ -598,7 +601,7 @@ class AliOssAdapter extends AbstractAdapter
 
             return $result;
         }
-        
+
         $result = array_merge($result, Util::map($object, static::$resultMap), ['type' => 'file']);
 
         return $result;
