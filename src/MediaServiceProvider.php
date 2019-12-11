@@ -108,6 +108,11 @@ class MediaServiceProvider extends BaseServiceProvider
     protected function registerServices()
     {
         $this->app->singleton(
+            \Viviniko\Media\Services\FileService::class,
+            \Viviniko\Media\Services\Impl\FileServiceImpl::class
+        );
+
+        $this->app->singleton(
             \Viviniko\Media\Services\ImageService::class,
             \Viviniko\Media\Services\Impl\ImageServiceImpl::class
         );
@@ -121,7 +126,6 @@ class MediaServiceProvider extends BaseServiceProvider
     public function provides()
     {
         return [
-            \Viviniko\Media\Services\ImageService::class,
         ];
     }
 }
