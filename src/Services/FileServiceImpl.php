@@ -4,6 +4,7 @@ namespace Viviniko\Media\Services\Impl;
 
 use Curl\Curl;
 use function GuzzleHttp\Psr7\mimetype_from_extension;
+use function GuzzleHttp\Psr7\mimetype_from_filename;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
@@ -68,8 +69,10 @@ class FileServiceImpl implements FileService
             $originalFilename = $source->getClientOriginalName();
             $mimeType = $source->getMimeType();
         } else if (filter_var($source, FILTER_VALIDATE_URL)) {
-            $data = $this->getDataFromUrl($source, $mimeType);
-            $originalFilename = $source;
+            $data = $this->getDataFromUrl($source);
+            $info = parse_url($source);
+            $originalFilename = basename($info['path']);
+            $mimeType = mimetype_from_extension(substr($originalFilename, strrpos($originalFilename, '.')+1));
         } else {
             $data = file_get_contents($source);
             $originalFilename = $source;
@@ -118,7 +121,7 @@ class FileServiceImpl implements FileService
         return $this;
     }
 
-    private function getDataFromUrl(&$url, &$contentType)
+    private function getDataFromUrl(&$url)
     {
         $curl = new Curl();
         $curl->setUserAgent('Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.2 (KHTML, like Gecko) Chrome/22.0.1216.0 Safari/537.2');
@@ -138,8 +141,6 @@ class FileServiceImpl implements FileService
         if ($curl->error) {
             throw new \Exception("Unable to init from given url: $url, Error: {$curl->errorMessage}");
         }
-
-        $contentType = $curl->responseHeaders['Content-Type'];
 
         if (!empty($locations)) {
             $url = array_pop($locations);
