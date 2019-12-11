@@ -13,10 +13,10 @@
     "require": {
         "php": ">=7.0",
         "aliyuncs/oss-sdk-php": "~2.0",
-        "illuminate/http": "^6.0",
         "intervention/image": "^2.5",
         "viviniko/repository": "dev-master",
-        "viviniko/support": "dev-master"
+        "viviniko/support": "dev-master",
+        "php-curl-class/php-curl-class": "^8.6"
     },
     "autoload": {
         "psr-0": {

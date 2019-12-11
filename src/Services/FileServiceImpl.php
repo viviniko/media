@@ -2,6 +2,7 @@
 
 namespace Viviniko\Media\Services\Impl;
 
+use Curl\Curl;
 use function GuzzleHttp\Psr7\mimetype_from_extension;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
@@ -69,7 +70,7 @@ class FileServiceImpl implements FileService
         } else if (filter_var($source, FILTER_VALIDATE_URL)) {
             $data = $this->getDataFromUrl($source);
             $originalFilename = $source;
-            $mimeType = mimetype_from_extension($source);
+            $mimeType = mimetype_from_extension($target);
         } else {
             $data = file_get_contents($source);
             $originalFilename = $source;
@@ -120,19 +121,14 @@ class FileServiceImpl implements FileService
 
     private function getDataFromUrl($url)
     {
-        $options = [
-            'http' => [
-                'method'=>"GET",
-                'header'=>"Accept-language: en\r\n". "User-Agent: Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.2 (KHTML, like Gecko) Chrome/22.0.1216.0 Safari/537.2\r\n"
-            ]
-        ];
-        $context  = stream_context_create($options);
-        $data = @file_get_contents($url, false, $context);
+        $curl = new Curl();
+        $curl->setUserAgent('Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.2 (KHTML, like Gecko) Chrome/22.0.1216.0 Safari/537.2');
+        $curl->get($url);
 
-        if (empty($data)) {
-            throw new \Exception("Unable to init from given url: $url.");
+        if ($curl->error) {
+            throw new \Exception("Unable to init from given url: $url, Error: {$curl->errorMessage}");
         }
 
-        return $data;
+        return $curl->response;
     }
 }
