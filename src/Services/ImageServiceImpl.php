@@ -6,32 +6,14 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
-use Viviniko\Media\Events\FileCreated;
-use Viviniko\Media\Events\FileUpdated;
 use Viviniko\Media\Models\File;
 use Viviniko\Media\Repositories\FileRepository;
 use Viviniko\Media\Services\ImageService;
 
-class ImageServiceImpl implements ImageService
+class ImageServiceImpl extends FileServiceImpl implements ImageService
 {
-    /**
-     * @var \Viviniko\Media\Repositories\FileRepository
-     */
-    private $repository;
-
-    /**
-     * @var string
-     */
-    private $disk;
-
-    /**
-     * @var \Illuminate\Contracts\Bus\Dispatcher
-     */
-    private $dispatcher;
-
     /**
      * ImageServiceImpl constructor.
      * @param \Viviniko\Media\Repositories\FileRepository $repository
@@ -39,25 +21,7 @@ class ImageServiceImpl implements ImageService
      */
     public function __construct(FileRepository $repository, Dispatcher $dispatcher)
     {
-        $this->repository = $repository;
-        $this->dispatcher = $dispatcher;
-        $this->disk = Config::get('media.disk');
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function get($object, $disk = null)
-    {
-        return $this->repository->findBy(['disk' => $disk ?: $this->disk, 'object' => $object]);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function has($object, $disk = null)
-    {
-        return $this->repository->exists(['disk' => $disk ?: $this->disk, 'object' => $object]);
+        parent::__construct($repository, $dispatcher);
     }
 
     /**
@@ -124,24 +88,6 @@ class ImageServiceImpl implements ImageService
         }
 
         return $file;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function delete($id)
-    {
-        return $this->repository->delete($id);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function disk($disk)
-    {
-        $this->disk = $disk;
-
-        return $this;
     }
 
     private function makeFilename($filename, $suffix = '', $disk = null)
