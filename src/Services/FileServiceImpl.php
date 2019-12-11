@@ -68,13 +68,12 @@ class FileServiceImpl implements FileService
             $originalFilename = $source->getClientOriginalName();
             $mimeType = $source->getMimeType();
         } else if (filter_var($source, FILTER_VALIDATE_URL)) {
-            $data = $this->getDataFromUrl($source);
+            $data = $this->getDataFromUrl($source, $mimeType);
             $originalFilename = $source;
-            $mimeType = mimetype_from_extension($target);
         } else {
             $data = file_get_contents($source);
             $originalFilename = $source;
-            $mimeType = mimetype_from_extension($source);
+            $mimeType = mime_content_type($source);
         }
 
         $hash = md5($data);
@@ -119,14 +118,31 @@ class FileServiceImpl implements FileService
         return $this;
     }
 
-    private function getDataFromUrl($url)
+    private function getDataFromUrl(&$url, &$contentType)
     {
         $curl = new Curl();
         $curl->setUserAgent('Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.2 (KHTML, like Gecko) Chrome/22.0.1216.0 Safari/537.2');
+        $curl->setOpt(CURLOPT_AUTOREFERER, 1);
+        $curl->setOpt(CURLOPT_FOLLOWLOCATION, 1);
+        $locations = [];
+        $curl->setOpt(CURLOPT_HEADERFUNCTION, function($ch, $header) use(&$locations) {
+            $key = 'Location:';
+            if (strpos($header, $key) === 0) {
+                $locations[] = trim(substr($header, strlen($key)));
+            }
+            return strlen($header);
+        });
+
         $curl->get($url);
 
         if ($curl->error) {
             throw new \Exception("Unable to init from given url: $url, Error: {$curl->errorMessage}");
+        }
+
+        $contentType = $curl->responseHeaders['Content-Type'];
+
+        if (!empty($locations)) {
+            $url = array_pop($locations);
         }
 
         return $curl->response;
