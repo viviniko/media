@@ -139,7 +139,7 @@ class FileServiceImpl implements FileService
         $curl->get($url);
 
         if ($curl->error) {
-            throw new \Exception("Unable to init from given url: $url, Error: {$curl->errorMessage}");
+            throw new \Exception("Unable to init from given url: $url, Error[{$curl->errorCode}]: {$curl->errorMessage}");
         }
 
         if (!empty($locations)) {
