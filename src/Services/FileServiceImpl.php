@@ -115,6 +115,7 @@ class FileServiceImpl implements FileService
             $originalFilename = $source;
             $mimeType = mime_content_type($source);
         }
+        throw_if(!$data, new \InvalidArgumentException("Parse File [$source] Failed"));
         $originalFilename = basename(urldecode($originalFilename));
         return new File([
             'size' => strlen($data),
