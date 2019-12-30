@@ -47,4 +47,11 @@ interface FileService
      * @return int
      */
     public function delete($id);
+
+    /**
+     * Parse file by given url
+     * @param $url
+     * @return \Viviniko\Media\Models\File
+     */
+    public function parse($url);
 }

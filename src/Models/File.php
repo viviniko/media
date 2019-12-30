@@ -22,7 +22,7 @@ class File extends Model
 
     public function getReadableSizeAttribute()
     {
-        $bytes = $this->attributes['size'];
+        $bytes = $this->size;
         $units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
 
         for ($i = 0; $bytes > 1024; $i++) {
@@ -38,6 +38,24 @@ class File extends Model
             $this->content = Storage::disk($this->disk)->get($this->object);
         }
         return $this->content;
+    }
+
+    public function getMd5Attribute()
+    {
+        if (!$this->md5) {
+            $this->md5 = md5($this->content);
+        }
+
+        return $this->md5;
+    }
+
+    public function getSizeAttribute()
+    {
+        if (!$this->size) {
+            $this->size = strlen($this->content);
+        }
+
+        return $this->size;
     }
 
     public function setContent($content)

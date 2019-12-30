@@ -3,6 +3,7 @@
 namespace Viviniko\Media\Services\Impl;
 
 use Curl\Curl;
+use Viviniko\Media\Models\File;
 use function GuzzleHttp\Psr7\mimetype_from_extension;
 use function GuzzleHttp\Psr7\mimetype_from_filename;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -63,43 +64,20 @@ class FileServiceImpl implements FileService
     public function put($source, $target)
     {
         $disk = $this->disk;
+        $file = $this->parse($source);
+        $file->disk = $disk;
+        $file->object = $target;
 
-        if ($source instanceof UploadedFile) {
-            $data = $source->get();
-            $originalFilename = $source->getClientOriginalName();
-            $mimeType = $source->getMimeType();
-        } else if (filter_var($source, FILTER_VALIDATE_URL)) {
-            $data = $this->getDataFromUrl($source);
-            $info = parse_url($source);
-            $originalFilename = basename($info['path']);
-            $mimeType = mimetype_from_extension(substr($originalFilename, strrpos($originalFilename, '.')+1));
-        } else {
-            $data = file_get_contents($source);
-            $originalFilename = $source;
-            $mimeType = mime_content_type($source);
-        }
-
-        $hash = md5($data);
-        $originalFilename = basename(urldecode($originalFilename));
-        $attributes = [
-            'disk' => $disk,
-            'object' => $target,
-            'size' => strlen($data),
-            'mime_type' => $mimeType,
-            'md5' => $hash,
-            'original_filename' => $originalFilename
-        ];
-
-        return DB::transaction(function () use ($attributes, $data) {
-            if ($file = $this->repository->findBy(['disk' => $attributes['disk'], 'object' => $attributes['object']])) {
-                if (!empty($file->md5) && $file->md5 !== $attributes['md5']) {
-                    $file = $this->repository->update($file->id, $attributes)->setContent($data);
+        return DB::transaction(function () use ($file) {
+            if ($exists = $this->repository->findBy(['disk' => $file->disk, 'object' => $file->object])) {
+                if (!empty($file->md5) && $file->md5 !== $exists['md5']) {
+                    $exists = $this->repository->update($file->id, $file->toArray())->setContent($file->content);
                 }
             } else {
-                $file = $this->repository->create($attributes)->setContent($data);
+                $exists = $this->repository->create($file->toArray())->setContent($file->content);
             }
 
-            return $file;
+            return $exists;
         });
     }
 
@@ -119,6 +97,30 @@ class FileServiceImpl implements FileService
         $this->disk = $disk;
 
         return $this;
+    }
+
+    public function parse($source)
+    {
+        if ($source instanceof UploadedFile) {
+            $data = $source->get();
+            $originalFilename = $source->getClientOriginalName();
+            $mimeType = $source->getMimeType();
+        } else if (filter_var($source, FILTER_VALIDATE_URL)) {
+            $data = $this->getDataFromUrl($source);
+            $info = parse_url($source);
+            $originalFilename = basename($info['path']);
+            $mimeType = mimetype_from_extension(substr($originalFilename, strrpos($originalFilename, '.')+1));
+        } else {
+            $data = file_get_contents($source);
+            $originalFilename = $source;
+            $mimeType = mime_content_type($source);
+        }
+        $originalFilename = basename(urldecode($originalFilename));
+        return new File([
+            'size' => strlen($data),
+            'mime_type' => $mimeType,
+            'original_filename' => $originalFilename
+        ]);
     }
 
     private function getDataFromUrl(&$url)
