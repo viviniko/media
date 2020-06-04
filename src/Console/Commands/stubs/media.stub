@@ -17,7 +17,7 @@ class CreateMediaTable extends Migration
      */
     public function __construct()
     {
-        $this->filesTable = (new (Config::get('media.file')))->getTable();
+        $this->filesTable = Config::get('media.files_table');
     }
 
     /**
@@ -30,15 +30,14 @@ class CreateMediaTable extends Migration
         // Create table for storing medias
         Schema::create($this->filesTable, function (Blueprint $table) {
             $table->increments('id');
-            $table->string('disk');
-            $table->string('object');
+            $table->string('url');
             $table->unsignedInteger('size');
             $table->string('mime_type');
             $table->string('original_filename');
             $table->string('md5', 32);
             $table->timestamps();
 
-            $table->unique(['disk', 'object']);
+            $table->index('url');
         });
     }
 

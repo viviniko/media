@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
+use Viviniko\Media\DiskObject;
 use Viviniko\Media\Models\File;
 use Viviniko\Media\Repositories\FileRepository;
 use Viviniko\Media\Services\ImageService;
@@ -39,8 +40,7 @@ class ImageServiceImpl extends FileServiceImpl implements ImageService
         $hash = md5($data);
         $originalFilename = basename(urldecode($source instanceof UploadedFile ? $source->getClientOriginalName() : $source));
         $attributes = [
-            'disk' => $disk,
-            'object' => $target,
+            'url' => DiskObject::create($disk, $target)->toUrl(),
             'size' => strlen($data),
             'mime_type' => $mimeType,
             'md5' => $hash,
@@ -48,7 +48,7 @@ class ImageServiceImpl extends FileServiceImpl implements ImageService
         ];
 
         return DB::transaction(function () use ($attributes, $data) {
-            if ($file = $this->repository->findBy(['disk' => $attributes['disk'], 'object' => $attributes['object']])) {
+            if ($file = $this->repository->findBy(['url' => $attributes['url']])) {
                 if (!empty($file->md5) && $file->md5 !== $attributes['md5']) {
                     $file = $this->repository->update($file->id, $attributes)->setContent($data);
                 }
@@ -75,8 +75,7 @@ class ImageServiceImpl extends FileServiceImpl implements ImageService
             $data = $crop->encode($image->mime_type, 100)->getEncoded();
             $hash = md5($data);
             $attributes = [
-                'disk' => $disk,
-                'object' => $target,
+                'url' => DiskObject::create($disk, $target)->toUrl(),
                 'size' => strlen($data),
                 'mime_type' => $crop->mime(),
                 'md5' => $hash,

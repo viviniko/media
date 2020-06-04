@@ -3,9 +3,9 @@
 namespace Viviniko\Media\Services\Impl;
 
 use Curl\Curl;
+use Viviniko\Media\DiskObject;
 use Viviniko\Media\Models\File;
 use function GuzzleHttp\Psr7\mimetype_from_extension;
-use function GuzzleHttp\Psr7\mimetype_from_filename;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
@@ -47,7 +47,7 @@ class FileServiceImpl implements FileService
      */
     public function get($object, $disk = null)
     {
-        return $this->repository->findBy(['disk' => $disk ?: $this->disk, 'object' => $object]);
+        return $this->repository->findBy(['url' => DiskObject::create($disk ?: $this->disk, $object)]);
     }
 
     /**
@@ -55,7 +55,7 @@ class FileServiceImpl implements FileService
      */
     public function has($object, $disk = null)
     {
-        return $this->repository->exists(['disk' => $disk ?: $this->disk, 'object' => $object]);
+        return $this->repository->exists(['url' => DiskObject::create($disk ?: $this->disk, $object)]);
     }
 
     /**
@@ -63,13 +63,12 @@ class FileServiceImpl implements FileService
      */
     public function put($source, $target)
     {
-        $disk = $this->disk;
         $file = $this->parse($source);
-        $file->disk = $disk;
+        $file->disk = $this->disk;
         $file->object = $target;
 
         return DB::transaction(function () use ($file) {
-            if ($exists = $this->repository->findBy(['disk' => $file->disk, 'object' => $file->object])) {
+            if ($exists = $this->get($file->object, $file->disk)) {
                 if (!empty($file->md5) && $file->md5 !== $exists['md5']) {
                     $exists = $this->repository->update($file->id, $file->toArray())->setContent($file->content);
                 }
