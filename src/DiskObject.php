@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Storage;
 
 class DiskObject
 {
+    const SCHEME = "disk";
+
     /**
      * @var string
      */
@@ -56,22 +58,26 @@ class DiskObject
 
     public function toDiskUrl()
     {
-        return "{$this->disk}://{$this->object}";
+        return empty($this->disk) ? $this->object : (self::SCHEME . "://{$this->disk}/{$this->object}");
     }
 
     public function content()
     {
-        return Storage::disk($this->disk)->get($this->object);
+        return empty($this->disk) ? file_get_contents($this->object) : Storage::disk($this->disk)->get($this->object);
     }
 
     public function put($content)
     {
+        if (empty($this->disk)) {
+            throw new \Exception("Disk is empty.");
+        }
+
         return Storage::disk($this->disk)->put($this->object, $content);
     }
 
     public function toUrl()
     {
-        return Storage::disk($this->disk)->url($this->object);
+        return empty($this->disk) ? $this->object : Storage::disk($this->disk)->url($this->object);
     }
 
     public function toString()
@@ -86,6 +92,11 @@ class DiskObject
 
     public static function valueOf($url)
     {
-        return self::create(...explode('://', $url));
+        list($scheme, $diskObject) = explode('://', $url, 2);
+        if ($scheme == self::SCHEME) {
+            return self::create(...explode('/', $diskObject, 2));
+        }
+
+        return self::create(null, $url);
     }
 }
