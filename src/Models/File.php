@@ -2,14 +2,14 @@
 
 namespace Viviniko\Media\Models;
 
+use Viviniko\Media\DiskObject;
 use Viviniko\Support\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
 class File extends Model
 {
     protected $tableConfigKey = 'media.files_table';
 
-    protected $fillable = ['url', 'size', 'mime_type', 'md5', 'original_filename'];
+    protected $fillable = ['disk_url', 'size', 'mime_type', 'md5', 'original_filename'];
 
     protected $hidden = ['content'];
 
@@ -17,7 +17,12 @@ class File extends Model
 
     public function getUrlAttribute()
     {
-        return Storage::disk($this->disk)->url($this->object);
+        return $this->getDiskObjectAttribute()->toUrl();
+    }
+
+    public function getDiskObjectAttribute()
+    {
+        return DiskObject::valueOf($this->disk_url);
     }
 
     public function getReadableSizeAttribute()
@@ -35,7 +40,7 @@ class File extends Model
     public function getContentAttribute()
     {
         if (!$this->content) {
-            $this->content = Storage::disk($this->disk)->get($this->object);
+            $this->content = $this->getDiskObjectAttribute()->content();
         }
         return $this->content;
     }
@@ -60,7 +65,7 @@ class File extends Model
 
     public function setContent($content)
     {
-        Storage::disk($this->disk)->put($this->object, $content);
+        $this->getDiskObjectAttribute()->put($content);
         $this->content = $content;
 
         return $this;

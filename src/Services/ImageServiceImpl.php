@@ -40,7 +40,7 @@ class ImageServiceImpl extends FileServiceImpl implements ImageService
         $hash = md5($data);
         $originalFilename = basename(urldecode($source instanceof UploadedFile ? $source->getClientOriginalName() : $source));
         $attributes = [
-            'url' => DiskObject::create($disk, $target)->toUrl(),
+            'disk_url' => DiskObject::create($disk, $target)->toDiskUrl(),
             'size' => strlen($data),
             'mime_type' => $mimeType,
             'md5' => $hash,
@@ -48,7 +48,7 @@ class ImageServiceImpl extends FileServiceImpl implements ImageService
         ];
 
         return DB::transaction(function () use ($attributes, $data) {
-            if ($file = $this->repository->findBy(['url' => $attributes['url']])) {
+            if ($file = $this->repository->findBy(['disk_url' => $attributes['disk_url']])) {
                 if (!empty($file->md5) && $file->md5 !== $attributes['md5']) {
                     $file = $this->repository->update($file->id, $attributes)->setContent($data);
                 }
@@ -75,7 +75,7 @@ class ImageServiceImpl extends FileServiceImpl implements ImageService
             $data = $crop->encode($image->mime_type, 100)->getEncoded();
             $hash = md5($data);
             $attributes = [
-                'url' => DiskObject::create($disk, $target)->toUrl(),
+                'disk_url' => DiskObject::create($disk, $target)->toDiskUrl(),
                 'size' => strlen($data),
                 'mime_type' => $crop->mime(),
                 'md5' => $hash,

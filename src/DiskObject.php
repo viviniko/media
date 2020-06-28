@@ -2,6 +2,8 @@
 
 namespace Viviniko\Media;
 
+use Illuminate\Support\Facades\Storage;
+
 class DiskObject
 {
     /**
@@ -52,14 +54,29 @@ class DiskObject
         $this->object = $object;
     }
 
-    public function toUrl()
+    public function toDiskUrl()
     {
         return "{$this->disk}://{$this->object}";
     }
 
+    public function content()
+    {
+        return Storage::disk($this->disk)->get($this->object);
+    }
+
+    public function put($content)
+    {
+        return Storage::disk($this->disk)->put($this->object, $content);
+    }
+
+    public function toUrl()
+    {
+        return Storage::disk($this->disk)->url($this->object);
+    }
+
     public function toString()
     {
-        return $this->toUrl();
+        return $this->toDiskUrl();
     }
 
     public static function create($disk, $object)

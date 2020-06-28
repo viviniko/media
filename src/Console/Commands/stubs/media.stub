@@ -30,7 +30,7 @@ class CreateMediaTable extends Migration
         // Create table for storing medias
         Schema::create($this->filesTable, function (Blueprint $table) {
             $table->increments('id');
-            $table->string('url');
+            $table->string('disk_url');
             $table->unsignedInteger('size');
             $table->string('mime_type');
             $table->string('original_filename');

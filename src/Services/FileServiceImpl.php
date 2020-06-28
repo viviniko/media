@@ -47,7 +47,7 @@ class FileServiceImpl implements FileService
      */
     public function get($object, $disk = null)
     {
-        return $this->repository->findBy(['url' => DiskObject::create($disk ?: $this->disk, $object)->toUrl()]);
+        return $this->repository->findBy(['disk_url' => DiskObject::create($disk ?: $this->disk, $object)->toDiskUrl()]);
     }
 
     /**
@@ -55,7 +55,7 @@ class FileServiceImpl implements FileService
      */
     public function has($object, $disk = null)
     {
-        return $this->repository->exists(['url' => DiskObject::create($disk ?: $this->disk, $object)->toUrl()]);
+        return $this->repository->exists(['disk_url' => DiskObject::create($disk ?: $this->disk, $object)->toDiskUrl()]);
     }
 
     /**
