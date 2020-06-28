@@ -45,22 +45,22 @@ class File extends Model
         return $this->content;
     }
 
-    public function getMd5Attribute()
+    public function getMd5Attribute($md5)
     {
-        if (!$this->md5) {
-            $this->md5 = md5($this->content);
+        if (!$md5) {
+            $this->md5 = $md5 = md5($this->content);
         }
 
-        return $this->md5;
+        return $md5;
     }
 
-    public function getSizeAttribute()
+    public function getSizeAttribute($size)
     {
-        if (!$this->size) {
-            $this->size = strlen($this->content);
+        if (!$size) {
+            $this->size = $size = strlen($this->content);
         }
 
-        return $this->size;
+        return $size;
     }
 
     public function setContent($content)
