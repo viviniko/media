@@ -66,8 +66,8 @@ class ImageServiceImpl extends FileServiceImpl implements ImageService
     public function crop($id, $width, $height, $x = null, $y = null)
     {
         $image = $id instanceof File ? $id : $this->repository->find($id);
-        $disk = $image->disk;
-        $target = $this->makeFilename($image->object, '!' . "crop-{$image->id}_{$width}_{$height}_{$x}_{$y}");
+        list($disk, $object) = array_values($image->diskObject->toArray());
+        $target = $this->makeFilename($object, '!' . "crop-{$image->id}_{$width}_{$height}_{$x}_{$y}");
 
         $file = $this->get($target, $disk);
         if (!$file) {

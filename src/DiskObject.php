@@ -80,6 +80,11 @@ class DiskObject
         return empty($this->disk) ? $this->object : Storage::disk($this->disk)->url($this->object);
     }
 
+    public function toArray()
+    {
+        return ['disk' => $this->disk, 'object' => $this->object];
+    }
+
     public function toString()
     {
         return $this->toDiskUrl();
