@@ -37,7 +37,7 @@ class CreateMediaTable extends Migration
             $table->string('md5', 32);
             $table->timestamps();
 
-            $table->index('url');
+            $table->index('disk_url');
         });
     }
 
