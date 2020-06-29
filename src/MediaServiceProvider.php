@@ -3,6 +3,7 @@
 namespace Viviniko\Media;
 
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 use League\Flysystem\Filesystem;
 use OSS\OssClient;
@@ -37,29 +38,7 @@ class MediaServiceProvider extends BaseServiceProvider
         // Register commands
         $this->commands('command.media.table');
 
-        Storage::extend('oss', function($app, $config)
-        {
-            $accessId  = $config['access_id'];
-            $accessKey = $config['access_key'];
-
-            $cdnDomain = empty($config['cdnDomain']) ? '' : $config['cdnDomain'];
-            $bucket    = $config['bucket'];
-            $ssl       = empty($config['ssl']) ? false : $config['ssl'];
-            $debug     = empty($config['debug']) ? false : $config['debug'];
-            $endPoint  = $config['endpoint'];
-
-            $adapter = new AliOssAdapter(
-                (empty($accessId) || empty($accessKey) || empty($endPoint)) ?
-                    null :
-                    new OssClient($accessId, $accessKey, $endPoint, !empty($cdnDomain) && $cdnDomain == $endPoint),
-                $bucket, $endPoint, $ssl, $debug, $cdnDomain
-            );
-            $filesystem =  new Filesystem($adapter);
-            $filesystem->addPlugin(new PutFile());
-            $filesystem->addPlugin(new PutRemoteFile());
-            //$filesystem->addPlugin(new CallBack());
-            return $filesystem;
-        });
+        $this->tryExtendOss();
 
         File::observe(FileObserver::class);
     }
@@ -78,6 +57,35 @@ class MediaServiceProvider extends BaseServiceProvider
         $this->registerServices();
 
         $this->registerCommands();
+    }
+
+    private function tryExtendOss() {
+        try {
+            Storage::extend('oss', function ($app, $config) {
+                $accessId = $config['access_id'];
+                $accessKey = $config['access_key'];
+
+                $cdnDomain = empty($config['cdnDomain']) ? '' : $config['cdnDomain'];
+                $bucket = $config['bucket'];
+                $ssl = empty($config['ssl']) ? false : $config['ssl'];
+                $debug = empty($config['debug']) ? false : $config['debug'];
+                $endPoint = $config['endpoint'];
+
+                $adapter = new AliOssAdapter(
+                    (empty($accessId) || empty($accessKey) || empty($endPoint)) ?
+                        null :
+                        new OssClient($accessId, $accessKey, $endPoint, !empty($cdnDomain) && $cdnDomain == $endPoint),
+                    $bucket, $endPoint, $ssl, $debug, $cdnDomain
+                );
+                $filesystem = new Filesystem($adapter);
+                $filesystem->addPlugin(new PutFile());
+                $filesystem->addPlugin(new PutRemoteFile());
+                //$filesystem->addPlugin(new CallBack());
+                return $filesystem;
+            });
+        } catch (\Exception $ex) {
+            Log::warning("Storage OSS Register Fail Cause: " + $ex->getMessage());
+        }
     }
 
     /**
